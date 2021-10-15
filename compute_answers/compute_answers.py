@@ -5,10 +5,13 @@ import json
 import pandas as pd
 from datasets import Dataset, load_dataset
 from transformers import AutoModelForQuestionAnswering, AutoTokenizer, Trainer, default_data_collator
+import zipfile
+from os import path
 
 from file_loader import generate_dataset
 from preprocess import preprocess_eval
 from postprocess import postprocess_eval
+from google_downloader import download_file_from_google_drive
 
 
 
@@ -33,10 +36,23 @@ def main():
     
     ### Prediction ###
     
-    # Define HuggingFace architecture needed for inferece
+    # Define HuggingFace architecture needed for inferece.
     model_checkpoint = "distilbert-base-uncased"
+    
+    # Download the model from Google Drive.
+    if not path.isfile("squad_trained.zip") and not path.isdir("squad_trained"):
+        print("Downloading the model . . .\n")
+        download_file_from_google_drive(id="1ThyHyaFwci_SXLB6jrBnm6aacN74_YCd",
+                                        destination="squad_trained.zip")
+    
+    if not path.isdir("squad_trained"):
+        print("Extracting the model . . .\n")
+        with zipfile.ZipFile("squad_trained.zip", "r") as zip_ref:
+            zip_ref.extractall("./")
+    
     # Load the model from local files.
     model = AutoModelForQuestionAnswering.from_pretrained("squad_trained")
+    
     tokenizer = AutoTokenizer.from_pretrained(model_checkpoint)
     data_collator = default_data_collator
     trainer = Trainer(
